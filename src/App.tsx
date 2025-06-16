@@ -90,7 +90,7 @@ function App() {
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            {url && <iframe title={"bashmix"} src={url} width={"100%"} height={"600px"} allow="*"></iframe>}
+            {url && <iframe title={"bashmix"} src={url} width={"100%"} height={"600px"}></iframe>}
           </ModalBody>
         </ModalContent>
       </Modal>

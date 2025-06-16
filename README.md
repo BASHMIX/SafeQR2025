@@ -1,6 +1,25 @@
-# Getting Started with Create React App
+# SafeQR2025
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This app allows you to call your car from valet by scanning the QR code on your valet ticket. When you scan the QR code, the app opens a secure link to notify the valet to bring your car.
+
+- Simple QR code scanner interface
+- Works with valet tickets that have a QR code
+- Developed by Basheer Hafi
+
+## Getting Started
+
+1. Clone the repository
+2. Run `npm install`
+3. Run `npm start` to launch the app locally
+
+## Usage
+- Open the app on your device
+- Scan the QR code on your valet ticket
+- The app will automatically notify the valet
+
+---
+
+For any issues or contributions, please contact Basheer Hafi.
 
 ## Available Scripts
 
