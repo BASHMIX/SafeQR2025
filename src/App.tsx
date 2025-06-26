@@ -1,3 +1,4 @@
+import { SettingsIcon } from "@chakra-ui/icons";
 import {
   Box,
   HStack,
@@ -9,6 +10,13 @@ import {
   ModalOverlay,
   Text,
   VStack,
+  IconButton,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
+  useDisclosure,
+  Input
 } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import { QrReader } from "react-qr-reader";
@@ -19,6 +27,9 @@ import { isValidUrl } from "@src/isValidUrl";
 function App() {
   const [url, setUrl] = useState<string | null>(null);
   const [counter, setCounter] = useState<number>(0);
+  const [counterSetting, setCounterSetting] = useState<number>(5);
+  const [footerColor, setFooterColor] = useState<string>("#1b9dd8");
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
     // Clean up the interval when the component unmounts
@@ -35,9 +46,35 @@ function App() {
 
   return (
     <>
-      <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: 30 }}>
+      <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: 30, position: 'relative' }}>
         <img src={process.env.PUBLIC_URL + "/svlogo.png"} alt="Logo" style={{ display: "block" }} />
+        <IconButton
+          aria-label="Settings"
+          icon={<SettingsIcon />} 
+          size="md"
+          variant="ghost"
+          style={{ position: 'absolute', right: 0, top: 0 }}
+          onClick={onOpen}
+        />
       </div>
+      <Modal isOpen={isOpen} onClose={onClose} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Setting</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text mb={2}>Counter Value: {counterSetting} seconds</Text>
+            <Slider min={0} max={60} value={counterSetting} onChange={setCounterSetting} mb={4}>
+              <SliderTrack>
+                <SliderFilledTrack />
+              </SliderTrack>
+              <SliderThumb />
+            </Slider>
+            <Text mb={2}>Footer Color:</Text>
+            <Input type="color" value={footerColor} onChange={e => setFooterColor(e.target.value)} width="60px" p={0} border="none" bg="transparent" />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
       <div style={{ position: "relative", zIndex: 1 }}>
         <VStack spacing={8} align={"center"} justify={"center"} p={8}>
           <Text fontSize={"36px"} fontWeight={"bold"} mb={0}>
@@ -55,7 +92,7 @@ function App() {
                 if (result) {
                   const text = result.getText().trim();
                   if (isValidUrl(text)) {
-                    setCounter(5);
+                    setCounter(counterSetting);
                     setUrl(text);
                   }
                 }
@@ -72,7 +109,7 @@ function App() {
         style={{
           width: "100%",
           height: 260,
-          background: "#1b9dd8",
+          background: footerColor,
           position: "fixed",
           left: 0,
           bottom: 0,
