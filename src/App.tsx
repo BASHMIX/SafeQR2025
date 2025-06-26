@@ -1,3 +1,10 @@
+// App.tsx
+// Main application component for SafeQR2025
+// Features:
+// - QR code scanner with adjustable popup timer
+// - Settings modal for counter and footer color
+// - Camera disables when settings modal is open
+
 import { SettingsIcon } from "@chakra-ui/icons";
 import {
   Box,
@@ -25,56 +32,128 @@ import "./App.css";
 import { isValidUrl } from "@src/isValidUrl";
 
 function App() {
+  // Default values
+  const DEFAULT_COUNTER = 5;
+  const DEFAULT_FOOTER_COLOR = "#1b9dd8";
+
+  // State for the scanned URL (null if not scanning)
   const [url, setUrl] = useState<string | null>(null);
+  // State for the QR popup countdown
   const [counter, setCounter] = useState<number>(0);
-  const [counterSetting, setCounterSetting] = useState<number>(5);
-  const [footerColor, setFooterColor] = useState<string>("#1b9dd8");
+  // State for the counter value set in settings
+  const [pendingCounter, setPendingCounter] = useState<number>(() => {
+    const saved = localStorage.getItem('pendingCounter');
+    return saved !== null ? Number(saved) : DEFAULT_COUNTER;
+  });
+  // State for the footer color
+  const [footerColor, setFooterColor] = useState<string>(() => {
+    return localStorage.getItem('footerColor') || DEFAULT_FOOTER_COLOR;
+  });
+  // Chakra UI modal controls
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  // Save settings to localStorage when they change
   useEffect(() => {
-    // Clean up the interval when the component unmounts
+    localStorage.setItem('pendingCounter', String(pendingCounter));
+  }, [pendingCounter]);
+  useEffect(() => {
+    localStorage.setItem('footerColor', footerColor);
+  }, [footerColor]);
+
+  // Countdown effect for the QR popup
+  useEffect(() => {
     const interval = setInterval(() => {
       if (counter <= 0 && url) {
-        setUrl(null);
+        setUrl(null); // Close QR popup when timer ends
       } else if (counter > 0) {
         setCounter((prevCounter) => prevCounter - 1);
       }
     }, 1000);
-
     return () => clearInterval(interval);
-  }, [counter, setCounter]);
+  }, [counter, setCounter, url]);
+
+  // Handler for closing the settings modal
+  const handleSettingsClose = () => {
+    onClose();
+  };
+
+  // Handler to reset settings to default values
+  const handleResetDefaults = () => {
+    setPendingCounter(DEFAULT_COUNTER);
+    setFooterColor(DEFAULT_FOOTER_COLOR);
+  };
 
   return (
     <>
+      {/* Header with logo and settings icon */}
       <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: 30, position: 'relative' }}>
         <img src={process.env.PUBLIC_URL + "/svlogo.png"} alt="Logo" style={{ display: "block" }} />
         <IconButton
           aria-label="Settings"
-          icon={<SettingsIcon />} 
+          icon={<SettingsIcon color="gray.300" />} 
           size="md"
           variant="ghost"
           style={{ position: 'absolute', right: 0, top: 0 }}
           onClick={onOpen}
         />
       </div>
-      <Modal isOpen={isOpen} onClose={onClose} isCentered>
+      {/* Settings Modal */}
+      <Modal isOpen={isOpen} onClose={handleSettingsClose} isCentered>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Setting</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Text mb={2}>Counter Value: {counterSetting} seconds</Text>
-            <Slider min={0} max={60} value={counterSetting} onChange={setCounterSetting} mb={4}>
+            {/* Counter slider */}
+            <Text mb={2}>Counter Value: {pendingCounter} seconds</Text>
+            <Slider
+              min={0}
+              max={60}
+              value={pendingCounter}
+              onChange={val => {
+                // Debug log for slider
+                console.log('Slider value changed:', val);
+                setPendingCounter(val);
+              }}
+              mb={4}
+            >
               <SliderTrack>
                 <SliderFilledTrack />
               </SliderTrack>
               <SliderThumb />
             </Slider>
+            {/* Footer color picker */}
             <Text mb={2}>Footer Color:</Text>
-            <Input type="color" value={footerColor} onChange={e => setFooterColor(e.target.value)} width="60px" p={0} border="none" bg="transparent" />
+            <Input
+              type="color"
+              value={footerColor}
+              onChange={e => setFooterColor(e.target.value)}
+              width="60px"
+              p={0}
+              border="none"
+              bg="transparent"
+            />
+            {/* Reset to defaults button */}
+            <Box mt={4} textAlign="right">
+              <button
+                style={{
+                  background: '#eee',
+                  color: '#333',
+                  border: '1px solid #ccc',
+                  borderRadius: 4,
+                  padding: '6px 16px',
+                  cursor: 'pointer',
+                  fontWeight: 500
+                }}
+                onClick={handleResetDefaults}
+              >
+                Reset to Defaults
+              </button>
+            </Box>
           </ModalBody>
         </ModalContent>
       </Modal>
+      {/* Main QR scanner and title */}
       <div style={{ position: "relative", zIndex: 1 }}>
         <VStack spacing={8} align={"center"} justify={"center"} p={8}>
           <Text fontSize={"36px"} fontWeight={"bold"} mb={0}>
@@ -87,24 +166,28 @@ function App() {
             borderRadius={"lg"}
             borderColor={!!url ? "green.500" : "gray.300"}
           >
-            <QrReader
-              onResult={(result, error) => {
-                if (result) {
-                  const text = result.getText().trim();
-                  if (isValidUrl(text)) {
-                    setCounter(counterSetting);
-                    setUrl(text);
+            {/* Only show camera when settings modal is closed */}
+            {!isOpen && (
+              <QrReader
+                onResult={(result, error) => {
+                  if (result) {
+                    const text = result.getText().trim();
+                    if (isValidUrl(text)) {
+                      // Debug log for counter value
+                      console.log('Setting counter to:', pendingCounter);
+                      setCounter(pendingCounter);
+                      setUrl(text);
+                    }
                   }
-                }
-                if (error) {
-                  console.error(error);
-                }
-              }}
-              constraints={{ facingMode: "environment", aspectRatio: 1 }}
-            />
+                  // Removed error logging to avoid console noise
+                }}
+                constraints={{ facingMode: "environment", aspectRatio: 1 }}
+              />
+            )}
           </Box>
         </VStack>
       </div>
+      {/* Footer with dynamic color */}
       <div
         style={{
           width: "100%",
@@ -116,6 +199,7 @@ function App() {
           zIndex: 0,
         }}
       ></div>
+      {/* QR popup modal */}
       <Modal isCentered={true} size={"md"} isOpen={!!url} onClose={() => setUrl(null)}>
         <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(10px)" />
         <ModalContent borderTopRadius={"lg"}>
@@ -127,6 +211,7 @@ function App() {
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
+            {/* Show scanned URL in iframe */}
             {url && <iframe title={"bashmix"} src={url} width={"100%"} height={"600px"}></iframe>}
           </ModalBody>
         </ModalContent>
