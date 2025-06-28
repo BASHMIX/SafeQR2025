@@ -35,6 +35,7 @@ function App() {
   // Default values
   const DEFAULT_COUNTER = 5;
   const DEFAULT_FOOTER_COLOR = "#1b9dd8";
+  const DEFAULT_LOGO = process.env.PUBLIC_URL + "/svlogo.png";
 
   // State for the scanned URL (null if not scanning)
   const [url, setUrl] = useState<string | null>(null);
@@ -49,6 +50,10 @@ function App() {
   const [footerColor, setFooterColor] = useState<string>(() => {
     return localStorage.getItem('footerColor') || DEFAULT_FOOTER_COLOR;
   });
+  // State for the logo image (data URL or default)
+  const [logo, setLogo] = useState<string>(() => {
+    return localStorage.getItem('logoImage') || DEFAULT_LOGO;
+  });
   // Chakra UI modal controls
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -59,6 +64,13 @@ function App() {
   useEffect(() => {
     localStorage.setItem('footerColor', footerColor);
   }, [footerColor]);
+  useEffect(() => {
+    if (logo === DEFAULT_LOGO) {
+      localStorage.removeItem('logoImage');
+    } else {
+      localStorage.setItem('logoImage', logo);
+    }
+  }, [logo, DEFAULT_LOGO]);
 
   // Countdown effect for the QR popup
   useEffect(() => {
@@ -81,13 +93,28 @@ function App() {
   const handleResetDefaults = () => {
     setPendingCounter(DEFAULT_COUNTER);
     setFooterColor(DEFAULT_FOOTER_COLOR);
+    setLogo(DEFAULT_LOGO);
+  };
+
+  // Handler for logo file input
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target && typeof event.target.result === 'string') {
+          setLogo(event.target.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
     <>
       {/* Header with logo and settings icon */}
       <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: 30, position: 'relative' }}>
-        <img src={process.env.PUBLIC_URL + "/svlogo.png"} alt="Logo" style={{ display: "block" }} />
+        <img src={logo} alt="Logo" style={{ display: "block", maxHeight: 80 }} />
         <IconButton
           aria-label="Settings"
           icon={<SettingsIcon color="gray.300" />} 
@@ -133,6 +160,17 @@ function App() {
               border="none"
               bg="transparent"
             />
+            {/* Logo uploader */}
+            <Text mt={4} mb={1}>Logo Image:</Text>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={handleLogoChange}
+              mb={2}
+            />
+            <Box mb={2}>
+              <img src={logo} alt="Current Logo" style={{ maxWidth: 120, maxHeight: 60, display: 'block', margin: '0 auto' }} />
+            </Box>
             {/* Reset to defaults button */}
             <Box mt={4} textAlign="right">
               <button
